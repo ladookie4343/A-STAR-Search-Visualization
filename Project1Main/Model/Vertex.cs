@@ -11,46 +11,20 @@ namespace Project1Main
     /// </summary>
     public class Vertex
     {
-        private string name;
-        public string Name { get { return name; } }
-
-        private int x;
-        public int X
-        {
-            get { return x; }
-            set { x = value; }
-        }
-
-        private int y;
-        public int Y
-        {
-            get { return y; }
-            set { y = value; }
-        }
-
-        private double fScore;
-        public double FScore 
-        { 
-            get { return fScore; } 
-            set { fScore = value; } 
-        }
-
-        private List<int> adjList = new List<int>();
-        public List<int> AdjList
-        {
-            get { return adjList; }
-            set { adjList = value; }
-        }
-
-        private int id;
-        public int ID { get { return id; } }
+        public string Name { get; private set; }
+        public int ID { get; private set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int FScore { get; set; }
+        public List<int> AdjList { get; set; }
 
         public Vertex(string name, int x, int y, int id)
         {
-            this.name = name;
-            this.x = x;
-            this.y = y;
-            this.id = id;
+            Name = name;
+            X = x;
+            Y = y;
+            ID = id;
+            AdjList = new List<int>();
         }
     }
 }
