@@ -15,7 +15,7 @@ namespace Project1Main
         public int ID { get; private set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public int FScore { get; set; }
+        public double FScore { get; set; }
         public List<int> AdjList { get; set; }
 
         public Vertex(string name, int x, int y, int id)
