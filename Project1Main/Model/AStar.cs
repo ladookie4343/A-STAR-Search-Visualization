@@ -5,59 +5,24 @@ using System.Text;
 
 namespace Project1Main
 {
-    struct ConsideredPath
+    class ConsideredPath
     {
+        public string Tail { get; set; }
+        public string Head { get; set; }
+        public bool CurrentlyOptimal { get; set; }
+        public double GScore { get; set; }
+        public double HScore { get; set; }
+        public double FScore { get; set; }
+
         public ConsideredPath(string tail, string head, bool currentlyOptimal,
             double gScore, double hScore, double fScore)
         {
-            this.tail = tail;
-            this.head = head;
-            this.currentlyOptimal = currentlyOptimal;
-            this.gScore = gScore;
-            this.hScore = hScore;
-            this.fScore = fScore;
-        }
-
-        private string tail;
-        public string Tail
-        {
-            get { return tail; }
-            set { tail = value; }
-        }
-
-        private string head;
-        public string Head
-        {
-            get { return head; }
-            set { head = value; }
-        }
-
-        private bool currentlyOptimal;
-        public bool CurrentlyOptimal
-        {
-            get { return currentlyOptimal; }
-            set { currentlyOptimal = value; }
-        }
-
-        private double gScore;
-        public double GScore
-        {
-            get { return gScore; }
-            set { gScore = value; }
-        }
-
-        private double hScore;
-        public double HScore
-        {
-            get { return hScore; }
-            set { hScore = value; }
-        }
-
-        private double fScore;
-        public double FScore
-        {
-            get { return fScore; }
-            set { fScore = value; }
+            Tail = tail;
+            Head = head;
+            CurrentlyOptimal = currentlyOptimal;
+            GScore = gScore;
+            HScore = hScore;
+            FScore = fScore;
         }
     }
 
@@ -66,92 +31,67 @@ namespace Project1Main
     /// </summary>
     class AStar
     {
+        public List<ConsideredPath> ConsideredPath { get; private set; }
+        public List<Vertex> Vertices { get; private set; }
+        public HashSet<Vertex> ClosedSet { get; private set; }
+        public PriorityQueue<double, Vertex> OpenSet { get; private set; }
+        public double[] GScore { get; private set; }
+        public double[] HScore { get; private set; }      
+
         public AStar(string locationFile, string connectionFile)
         {
             try
             {
-                vertices = Utilties.getVertices(locationFile);
-                Utilties.createAdjLists(vertices, connectionFile);
+                Vertices = Utilities.getVertices(locationFile);
+                Utilities.createAdjLists(Vertices, connectionFile);
             }
             catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
-        }
-
-        #region Properties
-
-        private List<ConsideredPath> consideredPath;
-        public List<ConsideredPath> ConsideredPath
-        {
-            get { return consideredPath; }
-        }
-
-        private List<Vertex> vertices;
-        public List<Vertex> Vertices { get { return vertices; } }
-
-        private HashSet<Vertex> closedSet;
-        public HashSet<Vertex> ClosedSet { get { return closedSet; } }
-
-        private PriorityQueue<double, Vertex> openSet;
-        public PriorityQueue<double, Vertex> OpenSet
-        {
-            get { return openSet; }
-        }
-
-        private double[] gScore;
-        public double[] GScore { get { return gScore; } }
-
-        private double[] hScore;
-        public double[] HScore { get { return hScore; } }
-
-        
-
-        #endregion
+        }  
 
         private Vertex startVertex, goalVertex;
         private int[] cameFrom;
 
-        #region Methods
-
         private void initShortestPath(string startCity, string destination, IHeurisic heuristic)
         {
-            closedSet = new HashSet<Vertex>();
-            openSet = new PriorityQueue<double, Vertex>(new ByFScore());
-            cameFrom = new int[vertices.Count];
+            ClosedSet = new HashSet<Vertex>();
+            OpenSet = new PriorityQueue<double, Vertex>(new ByFScore());
+            cameFrom = new int[Vertices.Count];
 
-            gScore = new double[vertices.Count];
-            hScore = new double[vertices.Count];
+            GScore = new double[Vertices.Count];
+            HScore = new double[Vertices.Count];
 
-            startVertex = vertices.Find(vertex => vertex.Name == startCity);
-            goalVertex = vertices.Find(vertex => vertex.Name == destination);
+            startVertex = Vertices.Find(vertex => vertex.Name == startCity);
+            goalVertex = Vertices.Find(vertex => vertex.Name == destination);
 
-            gScore[startVertex.ID] = 0;
-            hScore[startVertex.ID] = heuristic.costEstimate(startVertex, goalVertex);
-            startVertex.FScore = gScore[startVertex.ID] + hScore[startVertex.ID];
+            GScore[startVertex.ID] = 0;
+            HScore[startVertex.ID] = heuristic.costEstimate(startVertex, goalVertex);
+            startVertex.FScore = GScore[startVertex.ID] + HScore[startVertex.ID];
 
-            openSet.Add(new KeyValuePair<double, Vertex>(startVertex.FScore, startVertex));
+            OpenSet.Add(new KeyValuePair<double, Vertex>(startVertex.FScore, startVertex));
 
-            consideredPath = new List<ConsideredPath>();
+            ConsideredPath = new List<ConsideredPath>();
         }
 
         public List<Vertex> getShortestPath(string startCity, string destination, string[] locationsToAvoid, IHeurisic heuristic)
         {
             foreach (string s in locationsToAvoid)
             {
-                Utilties.deleteVertex(s);
+                Utilities.deleteVertex(s);
             }
 
 
             initShortestPath(startCity, destination, heuristic);
 
-            while (!openSet.IsEmpty)
+            while (!OpenSet.IsEmpty)
             {
-                Vertex x = openSet.DequeueValue();
+                Vertex x = OpenSet.DequeueValue();
 
                 if (x.Name != startVertex.Name)
                 {
-                    consideredPath.Add(new ConsideredPath(vertices[cameFrom[x.ID]].Name, x.Name, true, 0, 0, 0));
+                    ConsideredPath.Add(new ConsideredPath(Vertices[cameFrom[x.ID]].Name, x.Name, true, 0, 0, 0));
                 }
 
                 if (x.ID == goalVertex.ID)
@@ -159,22 +99,22 @@ namespace Project1Main
                     return reconstructPath(cameFrom, startVertex, goalVertex);
                 }
 
-                closedSet.Add(x);
+                ClosedSet.Add(x);
 
                 foreach (int adjVertex in x.AdjList)
                 {
-                    Vertex y = vertices[adjVertex];
-                    if (closedSet.Contains(y)) continue;
+                    Vertex y = Vertices[adjVertex];
+                    if (ClosedSet.Contains(y)) continue;
 
-                    double tentativeGScore = gScore[x.ID] + heuristic.costEstimate(x, y);
+                    double tentativeGScore = GScore[x.ID] + heuristic.costEstimate(x, y);
                     bool tentativeIsBetter;
 
-                    if (!openSet.Contains(new KeyValuePair<double, Vertex>(y.FScore, y)))
+                    if (!OpenSet.Contains(new KeyValuePair<double, Vertex>(y.FScore, y)))
                     {
-                        hScore[y.ID] = heuristic.costEstimate(y, goalVertex);
+                        HScore[y.ID] = heuristic.costEstimate(y, goalVertex);
                         tentativeIsBetter = true;
                     }
-                    else if (tentativeGScore < gScore[y.ID])
+                    else if (tentativeGScore < GScore[y.ID])
                     {
                         tentativeIsBetter = true;
                     }
@@ -186,13 +126,13 @@ namespace Project1Main
                     if (tentativeIsBetter)
                     {
                         cameFrom[y.ID] = x.ID;
-                        gScore[y.ID] = tentativeGScore;
-                        y.FScore = gScore[y.ID] + hScore[y.ID];
-                        openSet.Add(new KeyValuePair<double, Vertex>(y.FScore, y));
+                        GScore[y.ID] = tentativeGScore;
+                        y.FScore = GScore[y.ID] + HScore[y.ID];
+                        OpenSet.Add(new KeyValuePair<double, Vertex>(y.FScore, y));
                     }
 
 
-                    consideredPath.Add(new ConsideredPath(x.Name, y.Name, false, gScore[y.ID], hScore[y.ID], y.FScore));
+                    ConsideredPath.Add(new ConsideredPath(x.Name, y.Name, false, GScore[y.ID], HScore[y.ID], y.FScore));
                 }
             }
 
@@ -208,7 +148,7 @@ namespace Project1Main
             stack.Push(end);
             while (cameFrom[idx] != start.ID)
             {
-                stack.Push(vertices[cameFrom[idx]]);
+                stack.Push(Vertices[cameFrom[idx]]);
                 idx = cameFrom[idx];
             }
             stack.Push(start);
@@ -220,8 +160,6 @@ namespace Project1Main
             }
             return path;
         }
-
-        #endregion
 
         class ByFScore : IComparer<double>
         {
